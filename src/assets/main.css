@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* 强制开启 dark 类名支持 */
+@variant dark (&:where(.dark, .dark *));
