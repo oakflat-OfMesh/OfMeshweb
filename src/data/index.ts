@@ -1,18 +1,16 @@
-// 1. 引入具体的 Mod 数据文件
+// src/data/index.ts
 import { confluenceData } from './mods/confluence';
+import { createData } from './mods/create';
+import type { ModDetailData } from '@/types/mod'; // 引入类型
 
-// 2. 建立映射表 (ID -> Data)
-const modMap = {
-  // Key 必须和 URL 里的 id 一致
+// ✅ 定义 Map 类型
+const modMap: Record<string, ModDetailData> = {
   'confluence': confluenceData,
-  
-  // 暂时还没数据的，可以用汇流的数据占位测试
-  'create': confluenceData, 
-  'twilight': confluenceData,
+  'create': createData,
+  'twilight': confluenceData, // 占位
 };
 
-// 3. 导出查找函数
-export function getModDataById(id) {
-  // 如果找不到 ID，返回默认数据或 null
+// ✅ 给参数和返回值加类型
+export function getModDataById(id: string): ModDetailData | null {
   return modMap[id] || null;
 }

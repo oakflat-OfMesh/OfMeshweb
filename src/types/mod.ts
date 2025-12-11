@@ -1,5 +1,12 @@
 // src/types/mod.ts
 
+export interface ModStyleConfig {
+  primary: string;
+  primaryDim: string;
+  secondary?: string;
+  pageBackground?: string; // CSS 完整字符串
+  heroOverlay?: string;
+}
 // 1. 工坊列表页的卡片数据接口
 export interface WorkshopMod {
   id: string;
@@ -37,8 +44,13 @@ export interface PerformanceStat {
 // (这里引用了之前定义的 CraftingNodeData，确保你之前的 types/crafting.ts 还在)
 import type { CraftingNodeData } from './crafting';
 
+// 2. 更新：详情页完整接口
 export interface ModDetailData {
   id: string;
+  // ✨ 新增这两个字段
+  themeColor?: string;
+  styleConfig?: ModStyleConfig; 
+  
   baseInfo: ModBaseInfo;
   performance: PerformanceStat[];
   craftingTree: CraftingNodeData;

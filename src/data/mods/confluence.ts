@@ -1,21 +1,33 @@
-// src/data/mods/confluence.js
+import type { ModDetailData } from '@/types/mod'; // ✅ 引入类型定义
 
-export const confluenceData = {
+export const confluenceData: ModDetailData = { // ✅ 加上类型注解
   id: 'confluence',
   
-  // 1. 基础信息 (传给 Hero 组件)
+  // 视觉风格配置
+  styleConfig: {
+    primary: '#a855f7',       // 紫色
+    primaryDim: 'rgba(168, 85, 247, 0.1)',
+    secondary: '#3b82f6',     
+    
+    pageBackground: `
+      background-color: #0f1115;
+      background-image: radial-gradient(#a855f7 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.15;
+    `,
+  },
+
   baseInfo: {
     title: '汇流来世',
     subtitle: 'Confluence: Otherworld',
     description: '打破次元壁！将泰拉瑞亚的饰品系统、地牢探险与 Boss 挑战完美融入 Minecraft。由平台团队亲自打磨，为您带来最纯正的冒险体验。',
-    bgImage: 'https://images.unsplash.com/photo-1605218427306-033ba20c6a39?q=80&w=1920&auto=format&fit=crop', // 暂时用个紫色系网图替代
+    bgImage: 'https://images.unsplash.com/photo-1605218427306-033ba20c6a39?q=80&w=1920&auto=format&fit=crop', 
     tags: ['官方认证', 'S级优化', 'RPG'],
     onlineCount: 7824,
     downloadUrl: '#',
     version: '2.4.1'
   },
 
-  // 2. 侧边栏配置 (传给 Sidebar)
   performance: [
     { label: '平均启动耗时', value: '12s', status: 'good', desc: '极快' },
     { label: '满载内存占用', value: '450MB', status: 'warning', desc: '中等' },
@@ -23,7 +35,6 @@ export const confluenceData = {
     { label: '实体渲染开销', value: '低', status: 'good', desc: '优秀' },
   ],
 
-  // 3. 核心功能数据：合成树 (传给 WikiTab)
   craftingTree: {
     id: 'final_boots',
     name: '泰拉之靴 (Terraspark Boots)',
@@ -52,15 +63,8 @@ export const confluenceData = {
     ]
   },
 
-  // 4. ✨ 架构核心：自定义插槽配置
-  // 这里告诉页面：我要加载哪些特殊组件
   customization: {
-    // 在侧边栏插入一个自定义组件，key 对应 registry 中的名字
     sidebarWidget: null, 
-    
-    // 增加额外的 Tab
-    extraTabs: [
-      // 比如以后可以加一个 "Boss 掉落表" 的 Tab
-    ]
+    extraTabs: []
   }
 };

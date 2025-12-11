@@ -1,20 +1,24 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { RouterLink } from 'vue-router'; // ✅ 引入 RouterLink
-import { Search, Download, Command, Sun, Moon } from 'lucide-vue-next';
+import { RouterLink, useRoute } from 'vue-router'; // ✅ Added useRoute
+import { Search, Command, Sun, Moon, User, LayoutDashboard } from 'lucide-vue-next';
 import { useTheme } from '@/composables/useTheme';
+import ScrollProgress from '@/components/ui/ScrollProgress.vue'; // ✅ Import the new component
 
+const route = useRoute(); // ✅ Get current route
 const { isDark, toggleTheme } = useTheme();
 const isScrolled = ref(false);
+
+// Mock login state (Replace with Pinia/API later)
+const isLoggedIn = ref(false); 
 
 const handleScroll = () => { isScrolled.value = window.scrollY > 10; };
 onMounted(() => window.addEventListener('scroll', handleScroll));
 onUnmounted(() => window.removeEventListener('scroll', handleScroll));
 
-// ✅ 定义导航菜单数据
 const navItems = [
   { name: 'Mod 工坊', path: '/workshop' },
-  { name: '硬核整合包', path: '/modpacks' }, // 暂时留空或指向未开发页
+  { name: '硬核整合包', path: '/modpacks' },
   { name: '创作者社区', path: '/community' }
 ];
 </script>
@@ -39,15 +43,14 @@ const navItems = [
     <div class="container mx-auto px-6 flex items-center justify-between">
       
       <RouterLink to="/" class="flex items-center gap-2 cursor-pointer group select-none">
-        <div class="relative w-8 h-8 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-          <div class="absolute inset-0 bg-indigo-600 rounded-lg blur-[2px] opacity-80 group-hover:blur-[8px] transition-all duration-300"></div>
-          <div class="relative z-10 w-full h-full bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl border border-white/20">
-            O
-          </div>
+        <div class="relative h-12 transition-transform duration-300 group-hover:scale-105 group-active:scale-95">
+          <div class="absolute inset-0 bg-indigo-500/30 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <img 
+            src="@/assets/logoAI.png" 
+            alt="OfMesh" 
+            class="relative h-full w-auto object-contain [image-rendering:pixelated] drop-shadow-sm dark:drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+          />
         </div>
-        <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-200 transition-colors duration-300">
-          OfMesh
-        </span>
       </RouterLink>
 
       <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -72,11 +75,13 @@ const navItems = [
         </a>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3 lg:gap-4">
+         
          <button @click="toggleTheme" class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 transition-colors duration-300 group overflow-hidden">
            <Sun :size="20" class="absolute transition-all duration-500 rotate-0 scale-100 dark:-rotate-90 dark:scale-0 text-amber-500" />
            <Moon :size="20" class="absolute transition-all duration-500 rotate-90 scale-0 dark:rotate-0 dark:scale-100 text-indigo-400" />
          </button>
+
          <div class="hidden lg:flex items-center group relative">
             <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full opacity-0 group-focus-within:opacity-100 transition duration-500 blur opacity-20"></div>
             <div class="relative flex items-center bg-slate-100 border border-slate-200 dark:bg-black/20 dark:border-white/10 rounded-full px-4 py-1.5 text-slate-400 focus-within:bg-white dark:focus-within:bg-black/40 focus-within:border-indigo-500/50 transition-all duration-300 backdrop-blur-sm">
@@ -85,11 +90,48 @@ const navItems = [
               <div class="ml-2 flex items-center gap-0.5 text-[10px] bg-slate-200 dark:bg-white/5 px-1.5 py-0.5 rounded text-slate-500 border border-slate-300 dark:border-white/5 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-300 transition-colors"><Command :size="10" /> K</div>
             </div>
          </div>
-         <button class="relative overflow-hidden bg-slate-900 text-white dark:bg-white dark:text-black px-5 py-2 rounded-xl text-sm font-bold hover:scale-105 active:scale-95 transition-all duration-300 group shadow-lg hover:shadow-xl dark:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-            <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover:animate-shimmer skew-x-12"></div>
-            <div class="relative flex items-center gap-2"><Download :size="16" class="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /> <span class="hidden sm:inline">PCL 启动</span></div>
-         </button>
+
+         <template v-if="isLoggedIn">
+           <RouterLink to="/dashboard">
+             <button class="flex items-center gap-2 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:text-indigo-600 dark:hover:text-indigo-300 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300">
+               <LayoutDashboard :size="16" />
+               <span class="hidden sm:inline">控制台</span>
+             </button>
+           </RouterLink>
+           <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-white dark:border-[#09090b] cursor-pointer shadow-md"></div>
+         </template>
+
+         <template v-else>
+             <RouterLink to="/login" class="hidden sm:block text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors px-2">
+               登录
+             </RouterLink>
+             
+             <RouterLink to="/register">
+               <button class="relative overflow-hidden bg-slate-900 text-white dark:bg-white dark:text-black px-5 py-2 rounded-xl text-sm font-bold hover:scale-105 active:scale-95 transition-all duration-300 group shadow-lg hover:shadow-xl dark:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                  <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover:animate-shimmer skew-x-12"></div>
+                  
+                  <div class="relative flex items-center gap-2">
+                    <User :size="16" class="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /> 
+                    <span>立即注册</span>
+                  </div>
+               </button>
+             </RouterLink>
+         </template>
+
       </div>
     </div>
+    
+    <ScrollProgress v-if="route.meta.showProgressBar" />
+
   </nav>
 </template>
+
+<style scoped>
+@keyframes shimmer {
+  0% { transform: translateX(-150%) skewX(12deg); }
+  100% { transform: translateX(150%) skewX(12deg); }
+}
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+</style>
