@@ -2,6 +2,7 @@
 import { RouterView, useRoute } from 'vue-router'; // ✅ 1. 引入 useRoute
 import TheNavbar from '@/components/layout/TheNavbar.vue';
 import TheFooter from '@/components/layout/TheFooter.vue';
+import SettingsModal from '@/components/SettingsModal.vue';
 
 const route = useRoute(); // ✅ 2. 获取当前路由实例
 </script>
@@ -28,6 +29,7 @@ const route = useRoute(); // ✅ 2. 获取当前路由实例
     <TheFooter v-if="!route.meta.hideNavbar" />
     
   </div>
+  <SettingsModal />
 </template>
 
 <style scoped>
