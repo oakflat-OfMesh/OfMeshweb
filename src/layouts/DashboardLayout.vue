@@ -1,28 +1,34 @@
-<script setup>
+<script setup lang="ts">
 import { RouterView, RouterLink } from 'vue-router';
+import { useAuth } from '@/composables/useAuth';
 import { LayoutDashboard, Box, Settings, LogOut, Bell } from 'lucide-vue-next';
 
-// 模拟用户信息
-const user = {
-  name: 'MinecraftUser',
-  avatar: null // 为空时显示默认
-};
+// 解构数据和方法
+const { userProfile, logout } = useAuth();
 
 const menuItems = [
   { name: '总览', path: '/dashboard', icon: LayoutDashboard },
   { name: '我的模组', path: '/dashboard/mods', icon: Box },
   { name: '账号设置', path: '/dashboard/settings', icon: Settings },
 ];
+
+const handleLogout = () => {
+  if (confirm('确定要退出登录吗？')) {
+    logout();
+  }
+};
 </script>
 
 <template>
   <div class="min-h-screen bg-slate-50 dark:bg-[#050505] flex">
     
     <aside class="w-64 bg-white dark:bg-[#09090b] border-r border-slate-200 dark:border-white/5 flex flex-col fixed h-full z-20">
-      <div class="p-6 flex items-center gap-2">
-        <img src="@/assets/logoAI.png" alt="Logo" class="h-8 w-auto" />
-        <span class="font-bold text-lg dark:text-white">OfMesh</span>
-      </div>
+      
+      <div class="p-6 flex items-center justify-start">
+        <RouterLink to="/" class="hover:opacity-80 transition-opacity" title="返回主页">
+          <img src="@/assets/logoAI.png" alt="Logo" class="h-8 w-auto" />
+        </RouterLink>
+        </div>
 
       <nav class="flex-1 px-4 space-y-1">
         <RouterLink 
@@ -38,13 +44,17 @@ const menuItems = [
       </nav>
 
       <div class="p-4 border-t border-slate-200 dark:border-white/5">
-        <button class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors">
+        <button 
+          @click="handleLogout"
+          class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
+        >
           <LogOut :size="18" /> 退出登录
         </button>
       </div>
     </aside>
 
     <main class="flex-1 ml-64 min-w-0">
+      
       <header class="h-16 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-slate-200 dark:border-white/5 sticky top-0 z-10 px-8 flex items-center justify-between">
         <h2 class="text-lg font-bold text-slate-800 dark:text-white">控制台</h2>
         
@@ -55,11 +65,22 @@ const menuItems = [
           </button>
           
           <div class="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-white/10">
+            
             <div class="text-right hidden sm:block">
-              <div class="text-sm font-bold text-slate-700 dark:text-white">{{ user.name }}</div>
-              <div class="text-xs text-slate-400">Lv.1 创造者</div>
+              <div class="text-sm font-bold text-slate-700 dark:text-white">
+                {{ userProfile?.username || '加载中...' }}
+              </div>
+              <div class="text-xs text-slate-400">
+                <span class="text-indigo-500">Lv.{{ userProfile?.level ?? 0 }}</span> 
+                {{ userProfile?.role ?? '创造者' }}
+              </div>
             </div>
-            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-white dark:border-black"></div>
+
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-white dark:border-black flex items-center justify-center text-white font-bold text-sm overflow-hidden">
+               <img v-if="userProfile?.avatar" :src="userProfile.avatar" class="w-full h-full object-cover" />
+               <span v-else>{{ userProfile?.username?.charAt(0).toUpperCase() }}</span>
+            </div>
+
           </div>
         </div>
       </header>

@@ -1,16 +1,16 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { RouterLink, useRoute } from 'vue-router'; // ✅ Added useRoute
-import { Search, Command, Sun, Moon, User, LayoutDashboard } from 'lucide-vue-next';
+import { RouterLink, useRoute } from 'vue-router'; 
+import { Search, Command, Sun, Moon, User } from 'lucide-vue-next';
 import { useTheme } from '@/composables/useTheme';
-import ScrollProgress from '@/components/ui/ScrollProgress.vue'; // ✅ Import the new component
+import { useAuth } from '@/composables/useAuth'; // ✅ 1. 引入 Auth 钩子
+import ScrollProgress from '@/components/ui/ScrollProgress.vue';
+import UserMenu from '@/components/layout/UserMenu.vue'; // ✅ 2. 引入 UserMenu 组件
 
-const route = useRoute(); // ✅ Get current route
+const route = useRoute();
 const { isDark, toggleTheme } = useTheme();
+const { isLoggedIn } = useAuth(); // ✅ 3. 获取响应式登录状态
 const isScrolled = ref(false);
-
-// Mock login state (Replace with Pinia/API later)
-const isLoggedIn = ref(false); 
 
 const handleScroll = () => { isScrolled.value = window.scrollY > 10; };
 onMounted(() => window.addEventListener('scroll', handleScroll));
@@ -65,14 +65,18 @@ const navItems = [
           <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-indigo-500 rounded-full transition-all duration-300 group-hover:w-full"></span>
         </RouterLink>
 
-        <a href="#" class="relative hover:text-indigo-600 dark:hover:text-white transition-colors duration-300 py-2 group flex items-center gap-1.5">
+        <RouterLink 
+          to="/servers" 
+          class="relative hover:text-indigo-600 dark:hover:text-white transition-colors duration-300 py-2 group flex items-center gap-1.5"
+          active-class="text-indigo-600 dark:text-white font-bold"
+        >
           联机大厅
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
           </span>
           <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-green-500 rounded-full transition-all duration-300 group-hover:w-full"></span>
-        </a>
+        </RouterLink>
       </div>
 
       <div class="flex items-center gap-3 lg:gap-4">
@@ -92,13 +96,7 @@ const navItems = [
          </div>
 
          <template v-if="isLoggedIn">
-           <RouterLink to="/dashboard">
-             <button class="flex items-center gap-2 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:text-indigo-600 dark:hover:text-indigo-300 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300">
-               <LayoutDashboard :size="16" />
-               <span class="hidden sm:inline">控制台</span>
-             </button>
-           </RouterLink>
-           <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-white dark:border-[#09090b] cursor-pointer shadow-md"></div>
+            <UserMenu />
          </template>
 
          <template v-else>
@@ -109,7 +107,6 @@ const navItems = [
              <RouterLink to="/register">
                <button class="relative overflow-hidden bg-slate-900 text-white dark:bg-white dark:text-black px-5 py-2 rounded-xl text-sm font-bold hover:scale-105 active:scale-95 transition-all duration-300 group shadow-lg hover:shadow-xl dark:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
                   <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover:animate-shimmer skew-x-12"></div>
-                  
                   <div class="relative flex items-center gap-2">
                     <User :size="16" class="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /> 
                     <span>立即注册</span>

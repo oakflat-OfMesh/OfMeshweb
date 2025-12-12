@@ -28,9 +28,9 @@ import { ShieldCheck, Zap } from 'lucide-vue-next';
                 <Zap :size="24" />
               </div>
               <div>
-                <h3 class="font-bold text-slate-900 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">PCL 深度集成</h3>
+                <h3 class="font-bold text-slate-900 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">MOD 工坊模式</h3>
                 <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  无需繁琐下载与配置。点击网页“一键安装”，直接唤起本地 PCL 启动器开始游戏。
+                  更加高效的数据集成形式，以便开发者更快构建自己的MOD专版。
                 </p>
               </div>
             </div>
