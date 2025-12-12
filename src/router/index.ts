@@ -1,5 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '../views/HomeView.vue';
+import HomeView from '../views/HomeView.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import RegisterView from '../views/auth/RegisterView.vue'
+import ProfileView from '../views/ProfileView.vue'
+import BadgeConsole from '@/views/admin/BadgeConsole.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,19 +35,19 @@ const router = createRouter({
     },
 
     // === 🔒 身份认证 (不显示官网导航) ===
-    { 
-      path: '/login', 
-      name: 'login', 
-      component: () => import('../views/auth/LoginView.vue'),
-      // ✅ 关键点：添加 meta 标记
-      meta: { hideNavbar: true }
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+      // ✅ 2. 标记：仅限游客访问 (已登录不能进)
+      meta: { guestOnly: true } 
     },
-    { 
-      path: '/register', 
-      name: 'register', 
-      component: () => import('../views/auth/RegisterView.vue'),
-      // ✅ 关键点：添加 meta 标记
-      meta: { hideNavbar: true }
+    {
+      path: '/register',
+      name: 'register',
+      component: RegisterView,
+      // ✅ 2. 标记：仅限游客访问
+      meta: { guestOnly: true }
     },
 
     // === 📊 控制台 (独立布局，不显示官网导航) ===
@@ -68,7 +72,23 @@ const router = createRouter({
       name: 'privacy',
       component: () => import('../views/static/PrivacyView.vue'),
       meta: { showProgressBar: true }
-    }
+    },
+    { 
+      path: '/servers', 
+      name: 'servers', 
+      component: () => import('../views/ServerBrowserView.vue') 
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileView,
+      meta: { requiresAuth: true } // 必须登录才能看
+    },
+    {
+    path: '/admin/console/wild', // 名字起得偏僻点，防止普通用户误入（虽然他们没权限）
+    name: 'WildConsole',
+    component: BadgeConsole
+  }
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
@@ -77,5 +97,25 @@ const router = createRouter({
     return { top: 0, behavior: 'smooth' };
   }
 });
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token;
+
+  // 情况 A: 去需要登录的页面，但没登录 -> 踢去登录页
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login');
+    return;
+  }
+
+  // 情况 B: 已登录，还想去 "游客专享" 页面 (登录/注册) -> 踢去个人资料页
+  if (to.meta.guestOnly && isAuthenticated) {
+    next('/profile'); // 或者 '/dashboard'
+    return;
+  }
+
+  // 其他情况放行
+  next();
+})
 
 export default router;

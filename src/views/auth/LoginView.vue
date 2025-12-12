@@ -1,12 +1,16 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter, RouterLink } from 'vue-router';
-import { Loader2, Mail, Lock, ChevronRight } from 'lucide-vue-next';
+import { Loader2, Mail, Lock, ChevronRight, AlertCircle } from 'lucide-vue-next';
 import AuthLayout from '@/components/auth/AuthLayout.vue';
+import api from '@/api/axios';
+import { useAuth } from '@/composables/useAuth'; // ✅ 1. 引入 useAuth
 
 const router = useRouter();
+const { login } = useAuth(); // ✅ 2. 解构 login 方法
 const isLoading = ref(false);
-const focusedField = ref(''); // 记录当前聚焦的字段，用于控制图标颜色
+const focusedField = ref(''); 
+const errorMessage = ref('');
 
 const form = reactive({
   email: '',
@@ -16,12 +20,34 @@ const form = reactive({
 
 const handleLogin = async () => {
   if (!form.email || !form.password) return;
+  
   isLoading.value = true;
+  errorMessage.value = '';
+
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // ✅ 3. 发送请求
+    const response = await api.post('/auth/login', {
+      username: form.email, 
+      password: form.password
+    });
+
+    // ✅ 4. 获取 Token 并更新全局状态
+    // 注意：response 变量只在这个 try 代码块里有效
+    const token = response.data.token;
+    
+    // 调用全局 login 方法 (更新 localStorage + 状态)
+    login(token, form.email);
+
+    // 跳转
     router.push('/dashboard');
+
   } catch (error) {
-    console.error(error);
+    console.error('登录出错:', error);
+    if (error.response && error.response.status === 403) {
+      errorMessage.value = '账号或密码错误，请重试';
+    } else {
+      errorMessage.value = '服务器连接失败，请稍后重试';
+    }
   } finally {
     isLoading.value = false;
   }
@@ -36,14 +62,17 @@ const handleLogin = async () => {
         <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">邮箱 / 用户名</label>
         <div 
           class="relative flex items-center transition-all duration-300 rounded-xl bg-slate-50 dark:bg-black/20 border-2"
-          :class="focusedField === 'email' ? 'border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.1)]' : 'border-transparent hover:border-slate-200 dark:hover:border-white/10'"
+          :class="[
+            errorMessage ? 'border-red-500/50 bg-red-50/10' : '',
+            focusedField === 'email' && !errorMessage ? 'border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.1)]' : 'border-transparent hover:border-slate-200 dark:hover:border-white/10'
+          ]"
         >
-          <div class="pl-4 text-slate-400 transition-colors" :class="{ 'text-indigo-500': focusedField === 'email' }">
+          <div class="pl-4 text-slate-400 transition-colors" :class="{ 'text-indigo-500': focusedField === 'email', 'text-red-500': errorMessage }">
             <Mail :size="20" />
           </div>
           <input 
             v-model="form.email"
-            @focus="focusedField = 'email'"
+            @focus="focusedField = 'email'; errorMessage = ''" 
             @blur="focusedField = ''"
             type="text" 
             placeholder="name@example.com"
@@ -60,14 +89,17 @@ const handleLogin = async () => {
         </div>
         <div 
           class="relative flex items-center transition-all duration-300 rounded-xl bg-slate-50 dark:bg-black/20 border-2"
-          :class="focusedField === 'password' ? 'border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.1)]' : 'border-transparent hover:border-slate-200 dark:hover:border-white/10'"
+          :class="[
+            errorMessage ? 'border-red-500/50 bg-red-50/10' : '',
+            focusedField === 'password' && !errorMessage ? 'border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.1)]' : 'border-transparent hover:border-slate-200 dark:hover:border-white/10'
+          ]"
         >
-          <div class="pl-4 text-slate-400 transition-colors" :class="{ 'text-indigo-500': focusedField === 'password' }">
+          <div class="pl-4 text-slate-400 transition-colors" :class="{ 'text-indigo-500': focusedField === 'password', 'text-red-500': errorMessage }">
             <Lock :size="20" />
           </div>
           <input 
             v-model="form.password"
-            @focus="focusedField = 'password'"
+            @focus="focusedField = 'password'; errorMessage = ''"
             @blur="focusedField = ''"
             type="password" 
             placeholder="••••••••"
@@ -75,6 +107,11 @@ const handleLogin = async () => {
             required
           />
         </div>
+      </div>
+
+      <div v-if="errorMessage" class="flex items-center gap-2 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-lg border border-red-200 dark:border-red-500/20 animate-in fade-in slide-in-from-top-2 duration-300">
+        <AlertCircle :size="16" />
+        <span>{{ errorMessage }}</span>
       </div>
 
       <button 

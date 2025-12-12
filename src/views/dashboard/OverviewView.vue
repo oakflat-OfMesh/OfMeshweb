@@ -1,5 +1,6 @@
-<script setup>
-import { ref } from 'vue';
+<script setup lang="ts">
+import { useRouter } from 'vue-router';
+import { useAuth } from '@/composables/useAuth'; // 1. 引入全局状态
 import { 
   Download, 
   MessageSquare, 
@@ -7,28 +8,41 @@ import {
   MoreHorizontal, 
   ArrowUpRight,
   Plus,
-  Layers,       // ✅ 替换 TrendingUp，用于代表整合包
-  Trophy        // ✅ 用于代表荣誉
+  Layers,       
+  Trophy,
+  LogOut 
 } from 'lucide-vue-next';
 
-// 1. 统计数据：移除“收益”，改为“被整合包收录”
-// 这是 MC 圈子衡量一个模组是否成功的硬核指标
+const router = useRouter();
+
+// 2. 解构出我们需要的数据和方法
+// userProfile: 包含 username, role, level 等所有信息
+// logout: 全局登出方法
+const { userProfile, logout } = useAuth();
+
+// 3. 登出功能适配
+const handleLogout = () => {
+  if(confirm('确定要退出登录吗？')) {
+    logout(); // 直接调用全局登出，useAuth 内部会处理跳转和清理
+  }
+};
+
+// --- 下面的静态数据保持不变 (等待后续对接 Dashboard 统计接口) ---
+
 const stats = [
   { label: '总下载量', value: '12,450', change: '+12%', icon: Download, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
   { label: '获得收藏', value: '3,820', change: '+5%', icon: Star, color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-500/10' },
   { label: '收到反馈', value: '482', change: '+24%', icon: MessageSquare, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' },
-  // ✅ 核心变更：成就感指标
   { label: '被整合包收录', value: '85', change: '+3', icon: Layers, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-500/10' },
 ];
 
-// 2. 项目列表 (保持不变，状态流转很清晰)
 const projects = [
   { id: 1, name: '更好的末地 (Better End)', version: 'v2.4.1', status: 'Active', downloads: '4.2k', updated: '2小时前' },
   { id: 2, name: '机械动力附属：核心', version: 'v1.0.2', status: 'Review', downloads: '850', updated: '1天前' },
   { id: 3, name: '赛博朋克材质包', version: 'v0.9.5', status: 'Draft', downloads: '-', updated: '3天前' },
 ];
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   Active: 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400',
   Review: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400',
   Draft: 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400',
@@ -40,13 +54,22 @@ const statusColors = {
     
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">欢迎回来, 创造者 👋</h1>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+          欢迎回来, {{ userProfile?.username || '创造者' }} 👋
+        </h1>
         <p class="text-slate-500 dark:text-slate-400 mt-1">你的创意正在改变方块世界，来看看今天的回响。</p>
       </div>
-      <button class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
-        <Plus :size="18" />
-        发布新作品
-      </button>
+      
+      <div class="flex items-center gap-3">
+        <button @click="handleLogout" class="p-2.5 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors" title="退出登录">
+          <LogOut :size="20" />
+        </button>
+
+        <button class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
+          <Plus :size="18" />
+          发布新作品
+        </button>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -155,7 +178,6 @@ const statusColors = {
              </div>
            </div>
         </div>
-
       </div>
 
     </div>
