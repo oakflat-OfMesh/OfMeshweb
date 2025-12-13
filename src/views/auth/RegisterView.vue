@@ -3,14 +3,18 @@ import { reactive, ref, onUnmounted } from 'vue';
 import { useRouter, RouterLink } from 'vue-router';
 import { Loader2, Mail, Lock, User, Check, AlertCircle, Key } from 'lucide-vue-next';
 import AuthLayout from '@/components/auth/AuthLayout.vue';
-import { useAuth } from '@/composables/useAuth';
-import { registerUser, sendVerificationCode } from '@/api/auth';
+// ❌ 删除: import { useAuth } from '@/composables/useAuth';
+// ❌ 删除: import { registerUser, sendVerificationCode } from '@/api/auth';
+// ✅ 新增: 引入统一的 API 和 Store
+import authApi from '@/api/auth';
+import { useUserStore } from '@/stores/user';
+import { createDiscreteApi } from 'naive-ui'; // 用于在组件内手动弹出提示
 
 const router = useRouter();
-const { login } = useAuth();
+const userStore = useUserStore();
+const { message } = createDiscreteApi(['message']); // 用于注册成功提示
 
-// ✅ 样式常量 (解决 @apply 报错问题)
-// 将 Tailwind 类名提取到这里
+// 样式常量
 const inputClass = "w-full pl-3 pr-4 py-3.5 bg-transparent border-none outline-none text-slate-900 dark:text-white placeholder:text-slate-400 font-medium";
 
 const isLoading = ref(false);      
@@ -40,8 +44,10 @@ const handleSendCode = async () => {
   errorMessage.value = '';
 
   try {
-    await sendVerificationCode({ email: form.email, type: 'register' });
+    // ✅ 适配新接口：只传 email 字符串 (API 内部会封装成 json)
+    await authApi.sendCode(form.email, 'register');
     
+    // 倒计时逻辑
     countdown.value = 60;
     timer = setInterval(() => {
       countdown.value--;
@@ -50,10 +56,12 @@ const handleSendCode = async () => {
       }
     }, 1000);
 
-    alert('验证码已发送，请检查邮箱'); 
+    message.success('验证码已发送，请检查邮箱'); 
 
   } catch (error: any) {
-    errorMessage.value = error.response?.data || '验证码发送失败';
+    // 错误信息已由 axios 拦截器处理，这里只做 UI 状态变更
+    // 也可以在这里获取 error.response.data 来显示红框
+    errorMessage.value = error.response?.data?.message || '验证码发送失败';
   } finally {
     isSending.value = false;
   }
@@ -76,28 +84,33 @@ const handleRegister = async () => {
   errorMessage.value = '';
 
   try {
-    const response = await registerUser({
+    // ✅ 适配新接口：调用 authApi.register
+    const response = await authApi.register({
       username: form.username,
       email: form.email,
       password: form.password,
       code: form.code
     });
 
-    const token = response.data.token;
-    login(token, form.username);
+    // ✅ 适配 Pinia：存 Token 并自动拉取用户信息
+    // response 已经是 { token: "..." }，因为 axios 拦截器解包了 data
+    const token = response.token;
+    await userStore.setToken(token);
     
+    message.success('注册成功，欢迎加入！');
+    
+    // 注册成功后直接跳个人中心
     router.push('/profile');
 
   } catch (error: any) {
     console.error('注册失败:', error);
-    if (error.response && error.response.data) {
-      const msg = typeof error.response.data === 'string' 
-        ? error.response.data 
-        : error.response.data.message || '注册失败';
-      
-      errorMessage.value = msg;
+    // 优先显示后端返回的具体错误 (如验证码错误、用户名已存在)
+    const backendMsg = error.response?.data?.message || error.response?.data;
+    
+    if (backendMsg) {
+       errorMessage.value = typeof backendMsg === 'string' ? backendMsg : '注册失败，请检查输入';
     } else {
-      errorMessage.value = '服务器连接失败，请检查网络';
+       errorMessage.value = '服务器连接失败，请检查网络';
     }
   } finally {
     isLoading.value = false;
@@ -255,8 +268,6 @@ const handleRegister = async () => {
 </template>
 
 <style scoped>
-/* 这里的 @apply 已经删掉了，不会再报错了 */
-
 .shadow-focus {
   box-shadow: 0 0 0 4px rgba(99,102,241,0.1);
 }

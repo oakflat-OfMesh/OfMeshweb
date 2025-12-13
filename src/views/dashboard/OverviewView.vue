@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { useAuth } from '@/composables/useAuth'; // 1. 引入全局状态
+// ❌ 删除: import { useAuth } from '@/composables/useAuth';
+// ✅ 新增: Pinia Store
+import { useUserStore } from '@/stores/user';
 import { 
   Download, 
   MessageSquare, 
@@ -14,16 +16,12 @@ import {
 } from 'lucide-vue-next';
 
 const router = useRouter();
-
-// 2. 解构出我们需要的数据和方法
-// userProfile: 包含 username, role, level 等所有信息
-// logout: 全局登出方法
-const { userProfile, logout } = useAuth();
+const userStore = useUserStore(); // ✅ 初始化 Store
 
 // 3. 登出功能适配
 const handleLogout = () => {
   if(confirm('确定要退出登录吗？')) {
-    logout(); // 直接调用全局登出，useAuth 内部会处理跳转和清理
+    userStore.logout(); // ✅ 直接调用 Store 的登出方法
   }
 };
 
@@ -55,7 +53,7 @@ const statusColors: Record<string, string> = {
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
-          欢迎回来, {{ userProfile?.username || '创造者' }} 👋
+          欢迎回来, {{ userStore.user?.username || '创造者' }} 👋
         </h1>
         <p class="text-slate-500 dark:text-slate-400 mt-1">你的创意正在改变方块世界，来看看今天的回响。</p>
       </div>

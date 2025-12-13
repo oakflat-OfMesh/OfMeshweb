@@ -1,121 +1,167 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/auth/LoginView.vue'
 import RegisterView from '../views/auth/RegisterView.vue'
 import ProfileView from '../views/ProfileView.vue'
-import BadgeConsole from '@/views/admin/BadgeConsole.vue'
+import api from '@/api/axios'
+// ✅ 引入 Store 用于在路由守卫中获取用户信息 (更稳健)
+import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // === 🏠 核心页面 ===
     { path: '/', name: 'home', component: HomeView },
     
-    // === Mod 工坊 ===
+    // === 🛠️ Mod & 整合包工坊 ===
     { path: '/workshop', name: 'workshop', component: () => import('../views/ModWorkshopView.vue') },
     { path: '/mod/:id', name: 'mod-detail', component: () => import('../views/ModDetailView.vue'), props: true },
+    { path: '/modpacks', name: 'modpacks', component: () => import('../views/ModpackWorkshopView.vue') },
 
-    // === 整合包工坊 ===
-    { 
-      path: '/modpacks', 
-      name: 'modpacks', 
-      component: () => import('../views/ModpackWorkshopView.vue') 
-    },
+    // === 🌍 社区 ===
+    { path: '/community', name: 'community', component: () => import('../views/CommunityView.vue') },
+    { path: '/community/create', name: 'create-post', component: () => import('../views/CreatePostView.vue') },
+    { path: '/servers', name: 'servers', component: () => import('../views/ServerBrowserView.vue') },
 
-    // === 创作者社区 ===
-    { 
-      path: '/community', 
-      name: 'community', 
-      component: () => import('../views/CommunityView.vue') 
-    },
-    // ✅ 新增：发布创作页
-    { 
-      path: '/community/create', 
-      name: 'create-post', 
-      component: () => import('../views/CreatePostView.vue') 
-    },
-
-    // === 🔒 身份认证 (不显示官网导航) ===
+    // === 🔐 身份认证 ===
     {
       path: '/login',
       name: 'login',
       component: LoginView,
-      // ✅ 2. 标记：仅限游客访问 (已登录不能进)
       meta: { guestOnly: true } 
     },
     {
       path: '/register',
       name: 'register',
       component: RegisterView,
-      // ✅ 2. 标记：仅限游客访问
       meta: { guestOnly: true }
     },
 
-    // === 📊 控制台 (独立布局，不显示官网导航) ===
-    { 
-      path: '/dashboard', 
-      component: () => import('../layouts/DashboardLayout.vue'),
-      // ✅ 关键点：给父路由添加标记，所有子路由都会继承效果
-      meta: { hideNavbar: true },
-      children: [
-        { path: '', name: 'dashboard', component: () => import('../views/dashboard/OverviewView.vue') }
-        // 未来可以在这里添加 'mods', 'settings' 等子路由
-      ]
-    },
-    {
-      path: '/about',
-      name: 'about',
-      component: () => import('../views/static/AboutView.vue'),
-      meta: { showProgressBar: true }
-    },
-    {
-      path: '/privacy',
-      name: 'privacy',
-      component: () => import('../views/static/PrivacyView.vue'),
-      meta: { showProgressBar: true }
-    },
-    { 
-      path: '/servers', 
-      name: 'servers', 
-      component: () => import('../views/ServerBrowserView.vue') 
-    },
+    // === 👤 用户中心 ===
     {
       path: '/profile',
       name: 'profile',
       component: ProfileView,
-      meta: { requiresAuth: true } // 必须登录才能看
+      meta: { requiresAuth: true }
+    },
+    
+    // === 📊 用户控制台 ===
+    { 
+      path: '/dashboard', 
+      component: () => import('../layouts/DashboardLayout.vue'),
+      meta: { hideNavbar: true, requiresAuth: true }, 
+      children: [
+        { path: '', name: 'dashboard', component: () => import('../views/dashboard/OverviewView.vue') }
+      ]
     },
     {
-    path: '/admin/console/wild', // 名字起得偏僻点，防止普通用户误入（虽然他们没权限）
-    name: 'WildConsole',
-    component: BadgeConsole
-  }
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('../views/auth/ForgotPasswordView.vue'),
+      meta: { guestOnly: true }
+    },
+    // === 🛡️ 管理后台 (修正版) ===
+    {
+      path: '/admin',
+      component: () => import('@/views/admin/AdminLayout.vue'),
+      // ✅ 关键修改：加上 hideNavbar: true，屏蔽主站导航栏
+      meta: { requiresAuth: true, requiresAdmin: true, hideNavbar: true }, 
+      children: [
+        {
+          path: '',
+          redirect: { name: 'AdminDashboard' }
+        },
+        {
+          path: 'dashboard',
+          name: 'AdminDashboard',
+          component: () => import('@/views/admin/pages/AdminDashboard.vue')
+        },
+        {
+          path: 'ops',
+          name: 'OpsCenter',
+          component: () => import('@/views/admin/pages/OpsCenter.vue')
+        },
+        {
+          path: 'users',
+          name: 'UserLookup',
+          component: () => import('@/views/admin/pages/UserLookup.vue')
+        },
+        {
+          path: 'badges',
+          name: 'BadgeOps',
+          component: () => import('@/views/admin/pages/BadgeOps.vue')
+        },
+        {
+          path: 'audit',
+          name: 'AuditLog',
+          component: () => import('@/views/admin/pages/AuditLog.vue')
+        }
+      ]
+    },
+
+    // === 🚫 错误页 ===
+    { 
+      path: '/403', 
+      name: 'Forbidden', 
+      component: () => import('../views/error/403.vue'),
+      // 错误页通常也建议屏蔽导航栏，看起来更整洁，你自己决定要不要加 hideNavbar
+      meta: { hideNavbar: true } 
+    },
+    { path: '/about', name: 'about', component: () => import('../views/static/AboutView.vue') },
+    { path: '/privacy', name: 'privacy', component: () => import('../views/static/PrivacyView.vue') },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('../views/error/404.vue'),
+      meta: { hideNavbar: true }
+    }
   ],
   scrollBehavior(to, from, savedPosition) {
-    if (savedPosition) {
-      return savedPosition;
-    }
-    return { top: 0, behavior: 'smooth' };
+    if (savedPosition) return savedPosition
+    return { top: 0, behavior: 'smooth' }
   }
-});
-
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-  const isAuthenticated = !!token;
-
-  // 情况 A: 去需要登录的页面，但没登录 -> 踢去登录页
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login');
-    return;
-  }
-
-  // 情况 B: 已登录，还想去 "游客专享" 页面 (登录/注册) -> 踢去个人资料页
-  if (to.meta.guestOnly && isAuthenticated) {
-    next('/profile'); // 或者 '/dashboard'
-    return;
-  }
-
-  // 其他情况放行
-  next();
 })
 
-export default router;
+// === 🛡️ 全局路由守卫 (配合 Pinia 优化) ===
+
+router.beforeEach(async (to, from, next) => {
+  const userStore = useUserStore()
+  const token = localStorage.getItem('token')
+  const isAuthenticated = !!token
+
+  // 1. 登录检查
+  if (to.matched.some(record => record.meta.requiresAuth) && !isAuthenticated) {
+    next({ name: 'login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  // 2. 游客检查
+  if (to.meta.guestOnly && isAuthenticated) {
+    next({ name: 'profile' })
+    return
+  }
+
+  // 3. 管理员检查
+  if (to.matched.some(record => record.meta.requiresAdmin)) {
+    // 确保用户信息已加载
+    if (!userStore.user && token) {
+      try {
+        await userStore.fetchCurrentUser()
+      } catch (e) {
+        next({ name: 'login' })
+        return
+      }
+    }
+
+    if (userStore.isAdmin) {
+      next()
+    } else {
+      next({ name: 'Forbidden' })
+    }
+    return
+  }
+
+  next()
+})
+
+export default router

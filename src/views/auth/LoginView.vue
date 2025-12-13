@@ -4,10 +4,13 @@ import { useRouter, RouterLink } from 'vue-router';
 import { Loader2, Mail, Lock, ChevronRight, AlertCircle } from 'lucide-vue-next';
 import AuthLayout from '@/components/auth/AuthLayout.vue';
 import api from '@/api/axios';
-import { useAuth } from '@/composables/useAuth'; // ✅ 1. 引入 useAuth
+// ❌ 删除旧的 useAuth
+// ✅ 引入新的 Pinia Store
+import { useUserStore } from '@/stores/user';
 
 const router = useRouter();
-const { login } = useAuth(); // ✅ 2. 解构 login 方法
+const userStore = useUserStore(); // ✅ 初始化 Store
+
 const isLoading = ref(false);
 const focusedField = ref(''); 
 const errorMessage = ref('');
@@ -25,25 +28,47 @@ const handleLogin = async () => {
   errorMessage.value = '';
 
   try {
-    // ✅ 3. 发送请求
-    const response = await api.post('/auth/login', {
-      username: form.email, 
+    // ✅ 1. 发送请求：使用标准字段 'identifier'
+    // api.post 经过拦截器处理，直接返回 data 数据
+    const authData = await api.post('/auth/login', {
+      identifier: form.email, 
       password: form.password
     });
 
-    // ✅ 4. 获取 Token 并更新全局状态
-    // 注意：response 变量只在这个 try 代码块里有效
-    const token = response.data.token;
+    // ✅ 2. 获取 Token
+    const token = authData.token; 
     
-    // 调用全局 login 方法 (更新 localStorage + 状态)
-    login(token, form.email);
+    // ✅ 3. 更新全局状态 (存入 Pinia 并触发用户信息拉取)
+    // 我们 await 它，确保状态更新完成
+    await userStore.setToken(token);
 
-    // 跳转
-    router.push('/dashboard');
+    // ✅ 4. 智能跳转：根据角色决定去哪里
+    try {
+      // 为了确保跳转逻辑最准确，这里手动再查一次 User (或者直接用 store 里的 user)
+      const userProfile = await api.get('/users/me');
+      
+      if (userProfile.role === 'ADMIN') {
+        router.push('/admin/dashboard'); // 管理员去后台
+      } else {
+        router.push('/dashboard'); // 普通用户去控制台
+      }
+    } catch (profileError) {
+      // 如果极少数情况下获取 User 失败，兜底去 Dashboard
+      console.warn('Profile fetch failed during login redirect', profileError);
+      router.push('/dashboard');
+    }
 
   } catch (error) {
     console.error('登录出错:', error);
-    if (error.response && error.response.status === 403) {
+    
+    // ✅ 5. 错误处理：优先展示后端返回的具体错误
+    const status = error.response?.status;
+    const backendMsg = error.response?.data?.message || error.response?.data;
+
+    if (status === 400 && backendMsg) {
+      // 如果后端明确说了“验证码错误”或“密码错误”，直接显示
+      errorMessage.value = typeof backendMsg === 'string' ? backendMsg : '账号或密码错误';
+    } else if (status && [401, 403].includes(status)) {
       errorMessage.value = '账号或密码错误，请重试';
     } else {
       errorMessage.value = '服务器连接失败，请稍后重试';
@@ -83,10 +108,16 @@ const handleLogin = async () => {
       </div>
 
       <div class="space-y-2">
-        <div class="flex justify-between items-center ml-1">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">密码</label>
-          <a href="#" class="text-xs font-bold text-indigo-600 hover:text-indigo-500 transition-colors">忘记密码?</a>
-        </div>
+          <div class="flex justify-between items-center ml-1">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">密码</label>
+        
+        <RouterLink 
+          to="/forgot-password" 
+          class="text-xs font-bold text-indigo-600 hover:text-indigo-500 transition-colors"
+        >
+          忘记密码?
+        </RouterLink>
+      </div>
         <div 
           class="relative flex items-center transition-all duration-300 rounded-xl bg-slate-50 dark:bg-black/20 border-2"
           :class="[

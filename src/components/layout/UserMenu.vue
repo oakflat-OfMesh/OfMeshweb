@@ -6,25 +6,30 @@ import {
   LogOut, 
   LayoutDashboard, 
   Settings, 
-  ChevronDown 
+  ChevronDown,
+  ShieldCheck 
 } from 'lucide-vue-next';
-import { useAuth } from '@/composables/useAuth';
-import { useSettings } from '@/composables/useSettings';
+// ❌ 删除: import { useAuth } from '@/composables/useAuth';
+// ✅ 新增: Pinia Store
+import { useUserStore } from '@/stores/user';
+import { useSettings } from '@/composables/useSettings'; // 这个保留，跟 auth 无关
 
 // 1. 获取全局状态
-const { userProfile, logout } = useAuth();
+const userStore = useUserStore();
 const { openSettings } = useSettings();
 
-// 2. ✨ 使用 computed 保持响应式 ✨
-// 只有这样写，当 userProfile 变化时，这里才会跟着变
-const displayName = computed(() => userProfile.value?.username || '加载中...');
-const displayId = computed(() => userProfile.value?.id || 'UID-....');
-const avatarUrl = computed(() => userProfile.value?.avatar);
-const initial = computed(() => displayName.value.charAt(0).toUpperCase());
+// 2. ✨ 使用 Store 的 Getters ✨
+// 这样写代码更少，而且逻辑更统一
+const displayName = computed(() => userStore.user?.username || '加载中...');
+const displayId = computed(() => userStore.displayId);
+const displayRole = computed(() => userStore.displayRole);
+const avatarUrl = computed(() => userStore.avatarUrl);
+const isAdmin = computed(() => userStore.isAdmin);
 
 const isOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
 
+// 点击外部关闭菜单
 const closeMenu = (e: MouseEvent) => {
   if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
     isOpen.value = false;
@@ -36,7 +41,7 @@ onUnmounted(() => document.removeEventListener('click', closeMenu));
 
 const handleLogout = () => {
   isOpen.value = false;
-  logout();
+  userStore.logout();
 };
 
 const handleOpenSettings = () => {
@@ -52,13 +57,15 @@ const handleOpenSettings = () => {
       class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full border border-transparent hover:border-slate-200 dark:hover:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-300 group"
     >
       <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition-transform overflow-hidden ring-2 ring-white dark:ring-[#18181b]">
-        <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-cover" />
-        <span v-else>{{ initial }}</span>
+        <img :src="avatarUrl" class="w-full h-full object-cover" />
       </div>
       
-      <div class="flex flex-col items-start">
+      <div class="hidden md:flex flex-col items-start">
         <span class="text-xs font-bold text-slate-700 dark:text-slate-200 max-w-[80px] truncate leading-tight">
           {{ displayName }}
+        </span>
+        <span class="text-[10px] text-slate-500 dark:text-slate-400 scale-90 origin-left">
+          {{ displayRole }}
         </span>
       </div>
       <ChevronDown :size="14" class="text-slate-400 transition-transform duration-300" :class="{ 'rotate-180': isOpen }" />
@@ -78,7 +85,12 @@ const handleOpenSettings = () => {
       >
         <div class="px-4 py-3 border-b border-slate-100 dark:border-white/5 mb-1 bg-slate-50/50 dark:bg-white/5">
           <p class="text-sm font-bold text-slate-900 dark:text-white truncate">{{ displayName }}</p>
-          <p class="text-xs text-slate-400 font-mono mt-0.5">{{ displayId }}</p>
+          <div class="flex justify-between items-center mt-0.5">
+             <p class="text-xs text-slate-400 font-mono">{{ displayId }}</p>
+             <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold">
+               {{ displayRole }}
+             </span>
+          </div>
         </div>
 
         <RouterLink 
@@ -88,6 +100,16 @@ const handleOpenSettings = () => {
         >
           <LayoutDashboard :size="16" />
           控制台
+        </RouterLink>
+
+        <RouterLink 
+          v-if="isAdmin"
+          to="/admin/dashboard" 
+          class="flex items-center gap-2 px-4 py-2.5 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors font-medium"
+          @click="isOpen = false"
+        >
+          <ShieldCheck :size="16" />
+          管理后台
         </RouterLink>
 
         <RouterLink 
