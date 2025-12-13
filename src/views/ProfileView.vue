@@ -1,21 +1,20 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useAuth } from '@/composables/useAuth';
-// 引入我们封装好的徽章列表组件
+// ❌ 删除: import { useAuth } from '@/composables/useAuth';
+// ✅ 新增: Pinia Store
+import { useUserStore } from '@/stores/user';
 import UserBadgeList from '@/components/UserBadgeList.vue';
 import { 
   MapPin, Calendar, Edit3, Settings, Share2, Box, Heart 
 } from 'lucide-vue-next';
 
-// 1. 使用全局状态
-// userProfile 已经在 useAuth 内部处理好了数据映射 (Role转中文、ID格式化等)
-const { userProfile, fetchUserProfile } = useAuth();
-
+// 1. 初始化 Store
+const userStore = useUserStore();
 const activeTab = ref('overview');
 
-// 2. 挂载时刷新数据
+// 2. 挂载时刷新数据 (确保是最新的用户信息)
 onMounted(() => {
-  fetchUserProfile();
+  userStore.fetchCurrentUser();
 });
 </script>
 
@@ -31,7 +30,7 @@ onMounted(() => {
       
       <div class="bg-white dark:bg-[#111] rounded-2xl shadow-xl border border-slate-200 dark:border-white/5 p-6 sm:p-8 flex flex-col sm:flex-row gap-6 items-start sm:items-end">
         
-        <div v-if="!userProfile" class="w-full py-10 text-center text-slate-500">
+        <div v-if="!userStore.user" class="w-full py-10 text-center text-slate-500">
           <div class="animate-pulse flex flex-col items-center">
              <div class="h-32 w-32 bg-slate-200 dark:bg-white/10 rounded-2xl mb-4"></div>
              <div class="h-8 w-48 bg-slate-200 dark:bg-white/10 rounded mb-2"></div>
@@ -44,8 +43,7 @@ onMounted(() => {
           <div class="relative group">
             <div class="w-32 h-32 rounded-2xl bg-gradient-to-br from-indigo-500 to-pink-500 p-1 shadow-lg ring-4 ring-slate-50 dark:ring-black">
                <div class="w-full h-full bg-slate-800 rounded-xl flex items-center justify-center text-4xl font-bold text-white overflow-hidden">
-                 <img v-if="userProfile.avatar" :src="userProfile.avatar" class="w-full h-full object-cover" />
-                 <span v-else>{{ userProfile.username?.charAt(0).toUpperCase() }}</span>
+                 <img :src="userStore.avatarUrl" class="w-full h-full object-cover" />
                </div>
             </div>
             <button class="absolute bottom-2 right-2 bg-slate-900 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer">
@@ -56,28 +54,32 @@ onMounted(() => {
           <div class="flex-1 space-y-2 mb-1">
             <div class="flex flex-wrap items-center gap-3">
                <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                 {{ userProfile.username }}
+                 {{ userStore.user.username }}
                </h1>
                
                <span class="px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-500/30">
-                 {{ userProfile.role }}
+                 {{ userStore.displayRole }}
                </span>
+               
                <span class="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-500/30">
-                 Lv.{{ userProfile.level }}
+                 Lv.{{ userStore.user.level || 0 }}
                </span>
 
-               <UserBadgeList :badges="userProfile.badges" mode="full" />
+               <UserBadgeList :badges="userStore.user.badges || []" mode="full" />
             </div>
 
             <p class="text-slate-500 dark:text-slate-400 max-w-2xl font-medium">
-               {{ userProfile.bio }}
+               {{ userStore.user.bio || '这个人很懒，什么都没写。' }}
             </p>
 
             <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-medium pt-1">
                <span class="flex items-center gap-1"><MapPin :size="12" /> Minecraft Server: NA</span>
-               <span class="flex items-center gap-1"><Calendar :size="12" /> 加入于 {{ userProfile.joinDate }}</span>
+               <span class="flex items-center gap-1">
+                 <Calendar :size="12" /> 
+                 加入于 {{ new Date(userStore.user.createdAt || Date.now()).toLocaleDateString() }}
+               </span>
                <span class="font-mono text-slate-300 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded">
-                 {{ userProfile.id }}
+                 {{ userStore.displayId }}
                </span>
             </div>
           </div>

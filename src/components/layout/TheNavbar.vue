@@ -3,13 +3,16 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink, useRoute } from 'vue-router'; 
 import { Search, Command, Sun, Moon, User } from 'lucide-vue-next';
 import { useTheme } from '@/composables/useTheme';
-import { useAuth } from '@/composables/useAuth'; // ✅ 1. 引入 Auth 钩子
+// ❌ 删除: import { useAuth } from '@/composables/useAuth';
+// ✅ 新增: 引入 Pinia Store
+import { useUserStore } from '@/stores/user';
 import ScrollProgress from '@/components/ui/ScrollProgress.vue';
-import UserMenu from '@/components/layout/UserMenu.vue'; // ✅ 2. 引入 UserMenu 组件
+import UserMenu from '@/components/layout/UserMenu.vue'; 
 
 const route = useRoute();
 const { isDark, toggleTheme } = useTheme();
-const { isLoggedIn } = useAuth(); // ✅ 3. 获取响应式登录状态
+const userStore = useUserStore(); // ✅ 初始化 Store
+
 const isScrolled = ref(false);
 
 const handleScroll = () => { isScrolled.value = window.scrollY > 10; };
@@ -95,7 +98,7 @@ const navItems = [
             </div>
          </div>
 
-         <template v-if="isLoggedIn">
+         <template v-if="userStore.isLoggedIn">
             <UserMenu />
          </template>
 

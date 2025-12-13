@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useSettings } from '@/composables/useSettings';
-import { useAuth } from '@/composables/useAuth';
+// ❌ 删除: import { useAuth } from '@/composables/useAuth';
+// ✅ 新增: Pinia Store
+import { useUserStore } from '@/stores/user';
 import { 
   X, Shield, User, Camera, Mail, Bell, Save, Megaphone 
 } from 'lucide-vue-next';
 
 const { isSettingsOpen, closeSettings } = useSettings();
-const { userProfile } = useAuth(); 
+// const { userProfile } = useAuth(); // 旧代码
+const userStore = useUserStore(); // ✅ 初始化 Store
 
 // === 样式常量 ===
 const inputClass = "w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-slate-900 dark:text-white placeholder:text-slate-400";
@@ -16,14 +19,13 @@ const activeTab = ref('profile');
 const tabs = [
   { id: 'profile', label: '个人资料', icon: User },
   { id: 'security', label: '账号安全', icon: Shield },
-  // ✅ 修改图标为 Bell (通知)，更符合语境
   { id: 'preference', label: '偏好设置', icon: Bell }, 
 ];
 
 const profileForm = ref({
-  nickname: userProfile.value?.username || '',
-  bio: userProfile.value?.bio || '',
-  email: 'user@ofmesh.com' 
+  nickname: userStore.user?.username || '',
+  bio: userStore.user?.bio || '',
+  email: userStore.user?.email || '' // 改用 Store 里的 email
 });
 
 const passwordForm = ref({
@@ -32,28 +34,30 @@ const passwordForm = ref({
   confirmPassword: ''
 });
 
-// ✅ 新增：偏好设置表单
 const preferenceForm = ref({
-  marketingEmail: true, // 默认接收
+  marketingEmail: true,
   communityDigest: false
 });
 
 const loading = ref(false);
 
+// 当弹窗打开时，重置表单数据为最新 Store 数据
 watch(isSettingsOpen, (newVal) => {
   if (newVal) {
-    profileForm.value.nickname = userProfile.value?.username || '';
+    profileForm.value.nickname = userStore.user?.username || '';
+    profileForm.value.bio = userStore.user?.bio || '';
+    profileForm.value.email = userStore.user?.email || '';
   }
 });
 
 const handleSave = async () => {
   loading.value = true;
-  // 这里后续可以调用后端 API: POST /api/users/preferences
-  console.log('保存偏好设置:', preferenceForm.value);
+  // 这里后续可以调用后端 API: POST /api/users/profile
+  console.log('保存设置:', profileForm.value);
   
   setTimeout(() => {
     loading.value = false;
-    alert('✅ 设置已保存！');
+    alert('✅ 设置已保存！(Mock)');
     closeSettings();
   }, 800);
 };
@@ -119,10 +123,7 @@ const handleSave = async () => {
               <div class="flex items-center gap-4">
                 <div class="relative group cursor-pointer">
                   <div class="w-20 h-20 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden ring-4 ring-white dark:ring-[#18181b]">
-                    <img v-if="userProfile?.avatar" :src="userProfile.avatar" class="w-full h-full object-cover" />
-                    <div v-else class="w-full h-full flex items-center justify-center text-2xl font-bold text-slate-400">
-                      {{ userProfile?.username?.charAt(0).toUpperCase() }}
-                    </div>
+                    <img v-if="userStore.avatarUrl" :src="userStore.avatarUrl" class="w-full h-full object-cover" />
                   </div>
                   <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Camera class="text-white" :size="24" />
@@ -169,12 +170,12 @@ const handleSave = async () => {
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                    <div class="space-y-1.5">
-                     <label class="text-xs font-bold text-slate-500 dark:text-slate-400">新密码</label>
-                     <input v-model="passwordForm.newPassword" type="password" :class="inputClass" placeholder="至少 8 位" />
+                      <label class="text-xs font-bold text-slate-500 dark:text-slate-400">新密码</label>
+                      <input v-model="passwordForm.newPassword" type="password" :class="inputClass" placeholder="至少 8 位" />
                    </div>
                    <div class="space-y-1.5">
-                     <label class="text-xs font-bold text-slate-500 dark:text-slate-400">确认新密码</label>
-                     <input v-model="passwordForm.confirmPassword" type="password" :class="inputClass" placeholder="再次输入" />
+                      <label class="text-xs font-bold text-slate-500 dark:text-slate-400">确认新密码</label>
+                      <input v-model="passwordForm.confirmPassword" type="password" :class="inputClass" placeholder="再次输入" />
                    </div>
                 </div>
               </div>

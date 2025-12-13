@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { RouterView, RouterLink } from 'vue-router';
-import { useAuth } from '@/composables/useAuth';
+// ❌ 删除: import { useAuth } from '@/composables/useAuth';
+// ✅ 新增: Pinia Store
+import { useUserStore } from '@/stores/user';
 import { LayoutDashboard, Box, Settings, LogOut, Bell } from 'lucide-vue-next';
 
-// 解构数据和方法
-const { userProfile, logout } = useAuth();
+// 初始化 Store
+const userStore = useUserStore();
 
 const menuItems = [
   { name: '总览', path: '/dashboard', icon: LayoutDashboard },
@@ -14,7 +16,7 @@ const menuItems = [
 
 const handleLogout = () => {
   if (confirm('确定要退出登录吗？')) {
-    logout();
+    userStore.logout();
   }
 };
 </script>
@@ -28,7 +30,7 @@ const handleLogout = () => {
         <RouterLink to="/" class="hover:opacity-80 transition-opacity" title="返回主页">
           <img src="@/assets/logoAI.png" alt="Logo" class="h-8 w-auto" />
         </RouterLink>
-        </div>
+      </div>
 
       <nav class="flex-1 px-4 space-y-1">
         <RouterLink 
@@ -68,17 +70,16 @@ const handleLogout = () => {
             
             <div class="text-right hidden sm:block">
               <div class="text-sm font-bold text-slate-700 dark:text-white">
-                {{ userProfile?.username || '加载中...' }}
+                {{ userStore.user?.username || '加载中...' }}
               </div>
               <div class="text-xs text-slate-400">
-                <span class="text-indigo-500">Lv.{{ userProfile?.level ?? 0 }}</span> 
-                {{ userProfile?.role ?? '创造者' }}
+                <span class="text-indigo-500">Lv.{{ userStore.user?.level ?? 0 }}</span> 
+                {{ userStore.displayRole }}
               </div>
             </div>
 
             <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-white dark:border-black flex items-center justify-center text-white font-bold text-sm overflow-hidden">
-               <img v-if="userProfile?.avatar" :src="userProfile.avatar" class="w-full h-full object-cover" />
-               <span v-else>{{ userProfile?.username?.charAt(0).toUpperCase() }}</span>
+               <img :src="userStore.avatarUrl" class="w-full h-full object-cover" />
             </div>
 
           </div>
