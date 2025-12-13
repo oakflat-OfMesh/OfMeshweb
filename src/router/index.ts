@@ -54,7 +54,12 @@ const router = createRouter({
         { path: '', name: 'dashboard', component: () => import('../views/dashboard/OverviewView.vue') }
       ]
     },
-
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('../views/auth/ForgotPasswordView.vue'),
+      meta: { guestOnly: true }
+    },
     // === 🛡️ 管理后台 (修正版) ===
     {
       path: '/admin',

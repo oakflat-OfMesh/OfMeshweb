@@ -1,19 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import authApi from '@/api/auth'
+import monitorApi from '@/api/monitor' // ✅ 新增
+import { createDiscreteApi } from 'naive-ui'
+
+const { message } = createDiscreteApi(['message'])
 
 export const useUserStore = defineStore('user', () => {
-  // === State (存原始数据) ===
-  const user = ref<any>(null) // 存后端返回的原始 JSON
+  const user = ref<any>(null)
   const token = ref(localStorage.getItem('token') || '')
+  let heartbeatTimer: number | null = null // ✅ 心跳定时器引用
 
-  // === Getters (处理 UI 显示逻辑) ===
-  
-  // 1. 角色判断
-  const isAdmin = computed(() => user.value?.role === 'ADMIN')
+  // Getters
   const isLoggedIn = computed(() => !!token.value)
-
-  // 2. 角色中文翻译 (从 useAuth 搬来的)
+  const isAdmin = computed(() => user.value?.role === 'ADMIN')
+  
   const displayRole = computed(() => {
     if (!user.value) return '游客'
     const map: Record<string, string> = { 
@@ -24,60 +25,81 @@ export const useUserStore = defineStore('user', () => {
     return map[user.value.role] || user.value.role
   })
 
-  // 3. 格式化 ID (从 useAuth 搬来的)
   const displayId = computed(() => {
     if (!user.value?.id) return 'UID-????'
     return `UID-${String(user.value.id).padStart(4, '0')}`
   })
 
-  // 4. 头像兜底
   const avatarUrl = computed(() => {
-    return user.value?.avatar || 'https://www.gravatar.com/avatar/?d=mp' // 默认头像
+    return user.value?.avatar || 'https://www.gravatar.com/avatar/?d=mp'
   })
 
-  // === Actions (动作) ===
+  // === Actions ===
+
+  // ✅ 启动心跳 (每30秒一次)
+  const startHeartbeat = () => {
+    // 先清理旧的，防止重复
+    if (heartbeatTimer) clearInterval(heartbeatTimer)
+    
+    // 立即发送一次
+    monitorApi.sendHeartbeat().catch(() => {}) 
+
+    // 设置循环
+    heartbeatTimer = setInterval(() => {
+      monitorApi.sendHeartbeat().catch((err: any) => {
+        // 如果心跳报 401，说明 Token 过期，自动登出
+        if (err.response?.status === 401) {
+          logout()
+        }
+      })
+    }, 30000) // 30秒
+  }
+
+  // ✅ 停止心跳
+  const stopHeartbeat = () => {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer)
+      heartbeatTimer = null
+    }
+  }
 
   const fetchCurrentUser = async () => {
     if (!token.value) return
     try {
-      // API 返回: { id: 1, role: 'USER', ... }
       const res = await authApi.getMe()
-      user.value = res 
+      user.value = res
+      // 拉取用户信息成功，说明登录有效，启动心跳
+      startHeartbeat()
     } catch (error) {
+      console.error('获取用户信息失败', error)
       logout()
     }
   }
 
-  const setToken = (newToken: string) => {
+  const setToken = async (newToken: string) => {
     token.value = newToken
     localStorage.setItem('token', newToken)
-    // 登录后立刻拉取资料
-    fetchCurrentUser() 
+    await fetchCurrentUser()
   }
   
   const logout = () => {
+    stopHeartbeat() // ✅ 登出时停止心跳
     token.value = ''
     user.value = null
     localStorage.removeItem('token')
-    // 如果不在登录页，踢回登录页
+    
     if (!window.location.pathname.includes('/login')) {
-      window.location.href = '/login'
+      message.info('您已退出登录')
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 500)
     }
   }
 
   return { 
-    // State
-    user, 
-    token, 
-    // Getters
-    isAdmin, 
-    isLoggedIn,
-    displayRole, // ✅ 新增：在页面上直接用 userStore.displayRole
-    displayId,   // ✅ 新增：在页面上直接用 userStore.displayId
-    avatarUrl,
-    // Actions
-    fetchCurrentUser, 
-    setToken, 
-    logout 
+    user, token, 
+    isLoggedIn, isAdmin, displayRole, displayId, avatarUrl,
+    fetchCurrentUser, setToken, logout,
+    startHeartbeat // 导出给 App.vue 用
   }
 })

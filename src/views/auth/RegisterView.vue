@@ -45,7 +45,7 @@ const handleSendCode = async () => {
 
   try {
     // ✅ 适配新接口：只传 email 字符串 (API 内部会封装成 json)
-    await authApi.sendVerificationCode(form.email);
+    await authApi.sendCode(form.email, 'register');
     
     // 倒计时逻辑
     countdown.value = 60;

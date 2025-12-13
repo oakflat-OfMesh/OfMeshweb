@@ -21,7 +21,10 @@ export default {
   searchUsers(query: string) {
     return request.get('/admin/users/search', { params: { q: query } })
   },
-
+// === 2.1 管理台健康检查 (DB/Redis) ===
+  getSystemHealth() {
+    return request.get('/admin/health')
+  },
   // === 3. 徽章管理 (对应后端 Checklist 3.1 & 3.2) ===
   grantBadge(data: { userId: number | string; badgeKey: string }) {
     return request.post('/admin/badges/grant', data)
@@ -31,5 +34,9 @@ export default {
     return request.delete('/admin/badges/revoke', { 
       params: { userId, badgeKey } 
     })
+  },
+  // === 4.1 概览统计 ===
+  getOverviewStats() {
+    return request.get('/admin/stats/overview')
   }
 }

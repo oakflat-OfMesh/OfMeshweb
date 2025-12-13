@@ -108,10 +108,16 @@ const handleLogin = async () => {
       </div>
 
       <div class="space-y-2">
-        <div class="flex justify-between items-center ml-1">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">密码</label>
-          <a href="#" class="text-xs font-bold text-indigo-600 hover:text-indigo-500 transition-colors">忘记密码?</a>
-        </div>
+          <div class="flex justify-between items-center ml-1">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">密码</label>
+        
+        <RouterLink 
+          to="/forgot-password" 
+          class="text-xs font-bold text-indigo-600 hover:text-indigo-500 transition-colors"
+        >
+          忘记密码?
+        </RouterLink>
+      </div>
         <div 
           class="relative flex items-center transition-all duration-300 rounded-xl bg-slate-50 dark:bg-black/20 border-2"
           :class="[
